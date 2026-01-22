@@ -86,8 +86,6 @@ export function canvas_inicialize() {
   webgl.texParameteri(webgl.TEXTURE_2D, webgl.TEXTURE_MAG_FILTER, webgl.NEAREST)
   webgl.enable(webgl.BLEND)
   webgl.blendFunc(webgl.ONE, webgl.ONE_MINUS_SRC_ALPHA);
-  // scene
-  requestAnimationFrame(canvas_draw)
 }
 export function tile_draw(
   x0: number, y0: number, x1: number, y1: number,
@@ -138,10 +136,9 @@ export function rect_draw(
   _indexes_virtual[_indexes_length++] = vertex_offset + 2
   _indexes_virtual[_indexes_length++] = vertex_offset + 3
 }
-export function canvas_draw() {
+function canvas_draw() {
   if (!webgl)
     throw new Error('!webgl')
-  requestAnimationFrame(canvas_draw)
   _indexes_length = 0
   _vertices_length = 0
   // draw
@@ -149,5 +146,7 @@ export function canvas_draw() {
   // render
   webgl.bufferData(webgl.ARRAY_BUFFER, _vertices_virtual, webgl.STATIC_DRAW)
   webgl.bufferData(webgl.ELEMENT_ARRAY_BUFFER, _indexes_virtual, webgl.STATIC_DRAW)
+  webgl.clear(webgl.COLOR_BUFFER_BIT)
   webgl.drawElements(webgl.TRIANGLES, _indexes_length, webgl.UNSIGNED_SHORT, 0)
 }
+export function canvas_render() { requestAnimationFrame(canvas_draw) }

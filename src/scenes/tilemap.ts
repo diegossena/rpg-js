@@ -1,7 +1,8 @@
 import {
   ATLAS_TILE_SIZE, QUAD_INDEX_STRIDE, QUAD_VERTEX_STRIDE, CANVAS_NDC_X,
-  CANVAS_NDC_Y, canvas_emitter, tile_draw
-} from './canvas'
+  CANVAS_NDC_Y, canvas_emitter, tile_draw,
+  canvas_render
+} from '../canvas'
 
 export interface tilemap_t {
   width: number
@@ -31,15 +32,19 @@ export function tilemap_onkeydown(event: KeyboardEvent) {
   switch (event.key) {
     case 'ArrowUp':
       tilemap.offset_y -= 1
+      canvas_render()
       break
     case 'ArrowDown':
       tilemap.offset_y += 1
+      canvas_render()
       break
     case 'ArrowLeft':
       tilemap.offset_x -= 1
+      canvas_render()
       break
     case 'ArrowRight':
       tilemap.offset_x += 1
+      canvas_render()
       break
   }
 }

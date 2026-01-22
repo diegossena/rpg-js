@@ -1,5 +1,5 @@
-import { TILE_X_FLIP, TILE_Y_FLIP } from '../canvas'
-import { LAYER_0, LAYER_1, LAYER_2, LAYER_MAX, tile_id_get, TILE_STRIDE, tilemap_load, tilemap_set } from '../tilemap'
+import { canvas_render, TILE_X_FLIP, TILE_Y_FLIP } from '../canvas'
+import { LAYER_0, LAYER_1, LAYER_2, LAYER_MAX, tile_id_get, TILE_STRIDE, tilemap_load, tilemap_set } from './tilemap'
 
 export function hero_home_2f() {
   const width = 11
@@ -84,4 +84,5 @@ export function hero_home_2f() {
   tilemap_set(LAYER_2, 5, 4, tile_id_get(3, 4))
   tilemap_set(LAYER_2, 5, 5, tile_id_get(4, 4))
   tilemap_set(LAYER_2, 5, 6, tile_id_get(5, 4))
+  canvas_render()
 }
