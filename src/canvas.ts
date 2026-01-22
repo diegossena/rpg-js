@@ -7,28 +7,24 @@ declare global {
   var _indexes_length: number
   var _indexes_virtual: Uint16Array
 }
-export interface tile_t {
-  id: number
-  // tile_flag_t
-  flags: number
-}
-// tile_flags_t
-export const TILE_X_FLIP = 1 << 0
-export const TILE_Y_FLIP = 1 << 1
 
 export const webgl = canvas.getContext('webgl')
-export const canvas_emitter = new EventTarget()
-export const DRAW_EVENT_TYPE = 'draw'
-const DRAW_EVENT = new Event(DRAW_EVENT_TYPE)
+export const CANVAS_DRAW_EVENT_TYPE = 'draw'
+const CANVAS_DRAW_EVENT = new Event('draw')
+
+export const CANVAS_NDC_X = 2 / canvas.width
+export const CANVAS_NDC_Y = 2 / canvas.height
+
+export const SPRITE_SIZE = 16
+export const SPRITE_NDC = (1 / atlas.width) * SPRITE_SIZE
+// sprite_flags_t
+export const SPRITE_X_FLIP = 1 << 0
+export const SPRITE_Y_FLIP = 1 << 1
 
 export const VERTEX_SIZE = 2
 export const QUAD_VERTEX_COUNT = 4
 export const QUAD_VERTEX_STRIDE = QUAD_VERTEX_COUNT * 4
 export const QUAD_INDEX_STRIDE = 6
-export const ATLAS_TILE_SIZE = 16
-export const ATLAS_TILE_NDC = (1 / atlas.width) * ATLAS_TILE_SIZE
-export const CANVAS_NDC_X = 2 / canvas.width
-export const CANVAS_NDC_Y = 2 / canvas.height
 
 globalThis['_vertices_length'] = 0
 globalThis['_vertices_virtual'] = new Float32Array()
@@ -90,18 +86,20 @@ export function canvas_inicialize() {
 }
 export function tile_draw(
   x0: number, y0: number, x1: number, y1: number,
-  x: number, y: number, flags: number
+  tile_id: number, flags: number
 ) {
-  const u0 = ATLAS_TILE_NDC * x
-  const v0 = ATLAS_TILE_NDC * y
-  const u1 = u0 + ATLAS_TILE_NDC
-  const v1 = v0 + ATLAS_TILE_NDC
+  const tile_x = (tile_id - 1) % (atlas.width / SPRITE_SIZE)
+  const tile_y = Math.ceil(tile_id / (atlas.height / SPRITE_SIZE)) - 1
+  const u0 = SPRITE_NDC * tile_x
+  const v0 = SPRITE_NDC * tile_y
+  const u1 = u0 + SPRITE_NDC
+  const v1 = v0 + SPRITE_NDC
   rect_draw(
     x0, y0, x1, y1,
-    flags & TILE_X_FLIP ? u1 : u0,
-    flags & TILE_Y_FLIP ? v1 : v0,
-    flags & TILE_X_FLIP ? u0 : u1,
-    flags & TILE_Y_FLIP ? v0 : v1
+    flags & SPRITE_X_FLIP ? u1 : u0,
+    flags & SPRITE_Y_FLIP ? v1 : v0,
+    flags & SPRITE_X_FLIP ? u0 : u1,
+    flags & SPRITE_Y_FLIP ? v0 : v1
   );
 }
 export function rect_draw(
@@ -143,7 +141,7 @@ function canvas_draw() {
   _indexes_length = 0
   _vertices_length = 0
   // draw
-  canvas_emitter.dispatchEvent(DRAW_EVENT)
+  window.dispatchEvent(CANVAS_DRAW_EVENT)
   // render
   webgl.bufferData(webgl.ARRAY_BUFFER, _vertices_virtual, webgl.STATIC_DRAW)
   webgl.bufferData(webgl.ELEMENT_ARRAY_BUFFER, _indexes_virtual, webgl.STATIC_DRAW)
