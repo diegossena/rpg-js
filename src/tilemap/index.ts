@@ -32,21 +32,22 @@ const PLAYER_TOP = 2
 const PLAYER_RIGHT = 3
 
 interface player_t {
-  direction: number
   x: number
   y: number
+  direction: number
 }
 
 // movement
 
-const MOVEMENT_DURATION = 500
+const MOVEMENT_DURATION = 400
 
 // layer_t
 export const LAYER_0 = 0
 export const LAYER_1 = 1
 export const LAYER_2 = 2
 export const LAYER_3 = 3
-export const LAYER_MAX = 4
+export const LAYER_ALWAYS_FRONT = 4
+export const LAYER_MAX = 5
 
 export const TILE_STRIDE = 2
 export const TILE_PX_SIZE = 70
@@ -108,27 +109,43 @@ export function tilemap_onkeydown(event: KeyboardEvent) {
   if (!movement) {
     switch (event.key) {
       case 'ArrowUp':
-        tilemap_moveto(tilemap.x, tilemap.y - 1)
         if (player) {
-          player.direction = PLAYER_TOP
+          if (player.direction === PLAYER_TOP) {
+            tilemap_moveto(tilemap.x, tilemap.y - 1)
+          } else {
+            player.direction = PLAYER_TOP
+            canvas_render()
+          }
         }
         break
       case 'ArrowDown':
-        tilemap_moveto(tilemap.x, tilemap.y + 1)
         if (player) {
-          player.direction = PLAYER_DOWN
+          if (player.direction === PLAYER_DOWN) {
+            tilemap_moveto(tilemap.x, tilemap.y + 1)
+          } else {
+            player.direction = PLAYER_DOWN
+            canvas_render()
+          }
         }
         break
       case 'ArrowLeft':
-        tilemap_moveto(tilemap.x - 1, tilemap.y)
         if (player) {
-          player.direction = PLAYER_LEFT
+          if (player.direction === PLAYER_LEFT) {
+            tilemap_moveto(tilemap.x - 1, tilemap.y)
+          } else {
+            player.direction = PLAYER_LEFT
+            canvas_render()
+          }
         }
         break
       case 'ArrowRight':
-        tilemap_moveto(tilemap.x + 1, tilemap.y)
         if (player) {
-          player.direction = PLAYER_RIGHT
+          if (player.direction === PLAYER_RIGHT) {
+            tilemap_moveto(tilemap.x + 1, tilemap.y)
+          } else {
+            player.direction = PLAYER_RIGHT
+            canvas_render()
+          }
         }
         break
     }
