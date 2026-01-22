@@ -1,7 +1,8 @@
 import {
   ATLAS_TILE_SIZE, QUAD_INDEX_STRIDE, QUAD_VERTEX_STRIDE, CANVAS_NDC_X,
   CANVAS_NDC_Y, canvas_emitter, tile_draw,
-  canvas_render
+  canvas_render,
+  DRAW_EVENT_TYPE
 } from '../canvas'
 
 export interface tilemap_t {
@@ -56,10 +57,10 @@ export function tilemap_load(props: tilemap_t) {
   _indexes_virtual = new Uint16Array(_indexes_virtual.length + rendered_tiles * QUAD_INDEX_STRIDE)
   tilemap = props
   window.addEventListener('keydown', tilemap_onkeydown)
-  canvas_emitter.addEventListener('draw', tilemap_draw)
+  canvas_emitter.addEventListener(DRAW_EVENT_TYPE, tilemap_draw)
 }
 export function tilemap_unload() {
-  canvas_emitter.removeEventListener('draw', tilemap_draw)
+  canvas_emitter.removeEventListener(DRAW_EVENT_TYPE, tilemap_draw)
   tilemap = null
   const tilemap_rendered_x = Math.ceil(TILEMAP_VISIBLE_X) + 1
   const tilemap_rendered_y = Math.ceil(TILEMAP_VISIBLE_Y) + 1

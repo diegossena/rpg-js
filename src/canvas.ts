@@ -18,10 +18,12 @@ export const TILE_Y_FLIP = 1 << 1
 
 export const webgl = canvas.getContext('webgl')
 export const canvas_emitter = new EventTarget()
-const DRAW_EVENT = new Event('draw')
+export const DRAW_EVENT_TYPE = 'draw'
+const DRAW_EVENT = new Event(DRAW_EVENT_TYPE)
 
 export const VERTEX_SIZE = 2
-export const QUAD_VERTEX_STRIDE = 16
+export const QUAD_VERTEX_COUNT = 4
+export const QUAD_VERTEX_STRIDE = QUAD_VERTEX_COUNT * 4
 export const QUAD_INDEX_STRIDE = 6
 export const ATLAS_TILE_SIZE = 16
 export const ATLAS_TILE_NDC = (1 / atlas.width) * ATLAS_TILE_SIZE
@@ -51,7 +53,6 @@ export function canvas_inicialize() {
   if (!webgl)
     throw new Error('!webgl')
   webgl.clearColor(0, 0, 0, 1)
-  webgl.clear(webgl.COLOR_BUFFER_BIT)
   webgl.viewport(0, 0, canvas.width, canvas.height)
   // input_layout
   const input_layout = webgl.createProgram()
@@ -107,7 +108,7 @@ export function rect_draw(
   x0: number, y0: number, x1: number, y1: number,
   u0: number, v0: number, u1: number, v1: number
 ) {
-  const vertex_offset = _vertices_length / 4;
+  const vertex_offset = _vertices_length / QUAD_VERTEX_COUNT;
   // vertex0
   _vertices_virtual[_vertices_length++] = x0
   _vertices_virtual[_vertices_length++] = y0

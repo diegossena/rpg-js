@@ -9,4 +9,9 @@ const alias = fs.readdirSync('./src', { withFileTypes: true })
     replacement: path.resolve(__dirname, 'src', file.name),
   }))
 
-export default defineConfig({ resolve: { alias } })
+export default defineConfig({
+  build: {
+    outDir: 'docs'
+  },
+  resolve: { alias }
+})
