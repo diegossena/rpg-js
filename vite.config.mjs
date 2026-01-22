@@ -10,8 +10,7 @@ const alias = fs.readdirSync('./src', { withFileTypes: true })
   }))
 
 export default defineConfig({
-  build: {
-    outDir: 'docs'
-  },
+  build: { outDir: 'docs' },
+  base: '/rpg-js/',
   resolve: { alias }
 })
