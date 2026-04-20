@@ -9,7 +9,7 @@ declare global {
 }
 
 export const webgl = canvas.getContext('webgl')
-export const CANVAS_DRAW_EVENT_TYPE = 'draw'
+export const CANVAS_DRAW_TYPE = 'draw'
 const CANVAS_DRAW_EVENT = new Event('draw')
 
 export const CANVAS_NDC_X = 2 / canvas.width

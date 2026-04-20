@@ -2,7 +2,7 @@ import {
   SPRITE_SIZE, QUAD_INDEX_STRIDE, QUAD_VERTEX_STRIDE, CANVAS_NDC_X,
   CANVAS_NDC_Y, tile_draw,
   canvas_render,
-  CANVAS_DRAW_EVENT_TYPE,
+  CANVAS_DRAW_TYPE as CANVAS_DRAW_TYPE,
   SPRITE_NDC
 } from '../canvas'
 
@@ -34,20 +34,22 @@ const PLAYER_RIGHT = 3
 interface player_t {
   x: number
   y: number
-  direction: number
+  /** [direction, top_id, bottom_id, flags] */
+  sprite: Uint8Array
 }
-
-// movement
 
 const MOVEMENT_DURATION = 400
 
-// layer_t
 export const LAYER_0 = 0
 export const LAYER_1 = 1
 export const LAYER_2 = 2
 export const LAYER_3 = 3
 export const LAYER_ALWAYS_FRONT = 4
 export const LAYER_MAX = 5
+
+const PLAYER_IDLE = 0
+const PLAYER_WALKING_1 = 1
+const PLAYER_WALKING_2 = 2
 
 export const TILE_STRIDE = 2
 export const TILE_PX_SIZE = 70
@@ -58,8 +60,8 @@ export const TILEMAP_VISIBLE_Y = canvas.height / TILE_PX_SIZE
 const TILEMAP_RENDERED_X = Math.ceil(TILEMAP_VISIBLE_X) + 1
 const TILEMAP_RENDERED_Y = Math.ceil(TILEMAP_VISIBLE_Y) + 1
 
-export const PLAYER_DRAW_EVENT_TYPE = 'playermove'
-const PLAYER_DRAW_EVENT = new Event(PLAYER_DRAW_EVENT_TYPE)
+export const PLAYER_MOVE_TYPE = 'playermove'
+const PLAYER_MOVE_EVENT = new Event(PLAYER_MOVE_TYPE)
 
 globalThis['tilemap'] = null
 globalThis['player'] = null
@@ -71,14 +73,17 @@ function _tilemap_movement() {
   if (!movement)
     throw new Error('!movement')
   let progress = (Date.now() - movement.time) / MOVEMENT_DURATION
+
+  player_animate(PLAYER_WALKING_1)
+
   if (progress >= 1) {
-    window.removeEventListener(CANVAS_DRAW_EVENT_TYPE, _tilemap_movement)
+    window.removeEventListener(CANVAS_DRAW_TYPE, _tilemap_movement)
     tilemap.x = movement.target_x
     tilemap.y = movement.target_y
     if (player) {
       player.x += Math.round(movement.target_x - movement.start_x)
       player.y += Math.round(movement.target_y - movement.start_y)
-      window.dispatchEvent(PLAYER_DRAW_EVENT)
+      window.dispatchEvent(PLAYER_MOVE_EVENT)
     }
     movement = null
   } else {
@@ -95,55 +100,82 @@ function tilemap_moveto(x: number, y: number) {
     throw new Error('!tilemap')
   movement = {
     time: Date.now(),
-    start_x: tilemap.x,
-    start_y: tilemap.y,
-    target_x: x,
-    target_y: y,
+    start_x: tilemap.x, start_y: tilemap.y,
+    target_x: x, target_y: y,
   }
-  window.addEventListener(CANVAS_DRAW_EVENT_TYPE, _tilemap_movement)
+  window.addEventListener(CANVAS_DRAW_TYPE, _tilemap_movement)
   canvas_render()
 }
-export function tilemap_onkeydown(event: KeyboardEvent) {
+function player_animate(state: number) {
+  if (!player)
+    throw new Error('!tilemap')
+  player.sprite[3] = 0
+  switch (player.sprite[0]) {
+    case PLAYER_TOP:
+      player.sprite[1] = sprite_id_get(4, 5)
+      player.sprite[2] = sprite_id_get(8, 5)
+      break
+    case PLAYER_DOWN:
+      if (state === PLAYER_IDLE) {
+        player.sprite[1] = sprite_id_get(4, 5)
+        player.sprite[2] = sprite_id_get(5, 5)
+      } else {
+        player.sprite[1] = sprite_id_get(9, 5)
+        player.sprite[2] = sprite_id_get(10, 5)
+      }
+      break
+    case PLAYER_RIGHT:
+      player.sprite[1] = sprite_id_get(6, 5)
+      player.sprite[2] = sprite_id_get(7, 5)
+      player.sprite[3] = 1
+      break
+    case PLAYER_LEFT:
+      player.sprite[1] = sprite_id_get(6, 5)
+      player.sprite[2] = sprite_id_get(7, 5)
+      break
+  }
+}
+function tilemap_onkeydown(event: KeyboardEvent) {
   if (!tilemap)
     throw new Error('!tilemap')
   if (!movement) {
     switch (event.key) {
       case 'ArrowUp':
         if (player) {
-          if (player.direction === PLAYER_TOP) {
+          if (player.sprite[0] === PLAYER_TOP) {
             tilemap_moveto(tilemap.x, tilemap.y - 1)
           } else {
-            player.direction = PLAYER_TOP
+            player.sprite[0] = PLAYER_TOP
             canvas_render()
           }
         }
         break
       case 'ArrowDown':
         if (player) {
-          if (player.direction === PLAYER_DOWN) {
+          if (player.sprite[0] === PLAYER_DOWN) {
             tilemap_moveto(tilemap.x, tilemap.y + 1)
           } else {
-            player.direction = PLAYER_DOWN
+            player.sprite[0] = PLAYER_DOWN
             canvas_render()
           }
         }
         break
       case 'ArrowLeft':
         if (player) {
-          if (player.direction === PLAYER_LEFT) {
+          if (player.sprite[0] === PLAYER_LEFT) {
             tilemap_moveto(tilemap.x - 1, tilemap.y)
           } else {
-            player.direction = PLAYER_LEFT
+            player.sprite[0] = PLAYER_LEFT
             canvas_render()
           }
         }
         break
       case 'ArrowRight':
         if (player) {
-          if (player.direction === PLAYER_RIGHT) {
+          if (player.sprite[0] === PLAYER_RIGHT) {
             tilemap_moveto(tilemap.x + 1, tilemap.y)
           } else {
-            player.direction = PLAYER_RIGHT
+            player.sprite[0] = PLAYER_RIGHT
             canvas_render()
           }
         }
@@ -154,14 +186,16 @@ export function tilemap_onkeydown(event: KeyboardEvent) {
 export function tilemap_load() {
   if (tilemap)
     return
+  tilemap = { width: 0, height: 0, tiles: new Uint8Array(), x: 0, y: 0 }
+  player = { x: 0, y: 0, sprite: new Uint8Array(4) }
   const rendered_tiles = LAYER_MAX * TILEMAP_RENDERED_X * TILEMAP_RENDERED_Y;
   _vertices_virtual = new Float32Array(_vertices_virtual.length + rendered_tiles * QUAD_VERTEX_STRIDE)
   _indexes_virtual = new Uint16Array(_indexes_virtual.length + rendered_tiles * QUAD_INDEX_STRIDE)
   window.addEventListener('keydown', tilemap_onkeydown)
-  window.addEventListener(CANVAS_DRAW_EVENT_TYPE, tilemap_draw)
+  window.addEventListener(CANVAS_DRAW_TYPE, tilemap_draw)
 }
 export function tilemap_unload() {
-  window.removeEventListener(CANVAS_DRAW_EVENT_TYPE, tilemap_draw)
+  window.removeEventListener(CANVAS_DRAW_TYPE, tilemap_draw)
   window.removeEventListener('keydown', tilemap_onkeydown)
   globalThis['tilemap'] = null
   globalThis['player'] = null
@@ -185,8 +219,13 @@ function tilemap_set_offset(x: number, y: number) {
     tilemap.y -= 1 / TILE_PX_SIZE
   }
 }
-export function player_set(x: number, y: number, direction = player?.direction || PLAYER_DOWN) {
-  player = { x, y, direction }
+export function player_set(x: number, y: number, direction = player?.sprite[0] || PLAYER_DOWN) {
+  if (player) {
+    player.x = x
+    player.y = y
+    player.sprite[0] = direction
+    player_animate(PLAYER_WALKING_1)
+  }
   tilemap_set_offset(x - TILEMAP_VISIBLE_X / 2 + .5, y - TILEMAP_VISIBLE_Y / 2 + .5)
 }
 export function sprite_id_get(x: number, y: number) {
@@ -240,35 +279,15 @@ export function tilemap_draw() {
       y0 = y1
     }
     if (player && layer == 3) {
-      let
-        top_id = 0,
-        bottom_id = 0,
-        flags = 0
-      switch (player.direction) {
-        case PLAYER_TOP:
-        case PLAYER_DOWN:
-          top_id = sprite_id_get(4, 5)
-          bottom_id = player.direction === PLAYER_TOP ? sprite_id_get(8, 5) : sprite_id_get(5, 5)
-          break
-        case PLAYER_RIGHT:
-          top_id = sprite_id_get(6, 5)
-          bottom_id = sprite_id_get(7, 5)
-          flags = 1
-          break
-        case PLAYER_LEFT:
-          top_id = sprite_id_get(6, 5)
-          bottom_id = sprite_id_get(7, 5)
-          break
-      }
       x0 = -SPRITE_NDC
       y0 = SPRITE_NDC + TILE_Y_NDC * .25
       x1 = x0 + TILE_X_NDC
       y1 = y0 - TILE_Y_NDC
-      tile_draw(x0, y0, x1, y1, top_id, flags)
+      tile_draw(x0, y0, x1, y1, player.sprite[1], player.sprite[3])
       y0 = y1
       x1 = x0 + TILE_X_NDC
       y1 = y0 - TILE_Y_NDC
-      tile_draw(x0, y0, x1, y1, bottom_id, flags)
+      tile_draw(x0, y0, x1, y1, player.sprite[2], player.sprite[3])
     }
   }
 }

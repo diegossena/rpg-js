@@ -3,7 +3,7 @@ import { canvas_render } from '../canvas'
 import {
   LAYER_0, LAYER_MAX, sprite_id_get, TILE_STRIDE,
   tilemap_load, tilemap_set,
-  PLAYER_DRAW_EVENT_TYPE,
+  PLAYER_MOVE_TYPE,
   player_set
 } from '../tilemap'
 import { hero_home_1f } from './hero_home_1f'
@@ -12,8 +12,7 @@ function onplayermove() {
   if (!player)
     throw new Error('!player')
   if (player.x === 8 && player.y === 1) {
-    // unload
-    window.removeEventListener(PLAYER_DRAW_EVENT_TYPE, onplayermove)
+    window.removeEventListener(PLAYER_MOVE_TYPE, onplayermove)
     hero_home_1f()
     player_set(9, 1)
   }
@@ -21,16 +20,17 @@ function onplayermove() {
 
 export function hero_home_2f() {
   tilemap_load()
-  const width = 11
-  const height = 9
-  const area = width * height
-  const tiles = new Uint8Array(LAYER_MAX * area * TILE_STRIDE)
-  tilemap = { width: 11, height: 9, x: 0, y: 0, tiles }
+  if (!tilemap)
+    throw new Error('!tilemap')
+  tilemap.width = 11
+  tilemap.height = 9
+  const area = tilemap.width * tilemap.height
+  tilemap.tiles = new Uint8Array(LAYER_MAX * area * TILE_STRIDE)
   // floor
-  for (let x = 0; x < width; x++) {
+  for (let x = 0; x < tilemap.width; x++) {
     tilemap_set(LAYER_0, x, 0, sprite_id_get(12, 1))
     tilemap_set(LAYER_0, x, 1, sprite_id_get(13, 1))
-    for (let y = 2; y < height; y++) {
+    for (let y = 2; y < tilemap.height; y++) {
       tilemap_set(LAYER_0, x, y, sprite_id_get(y == 2 || x == 0 ? 14 : 15, 1))
     }
   }
@@ -45,6 +45,6 @@ export function hero_home_2f() {
   S.carpet(3, 4, 5, 4)
   S.tv(5, 3)
   S.videogame(5, 5)
-  window.addEventListener(PLAYER_DRAW_EVENT_TYPE, onplayermove)
+  window.addEventListener(PLAYER_MOVE_TYPE, onplayermove)
   canvas_render()
 }
